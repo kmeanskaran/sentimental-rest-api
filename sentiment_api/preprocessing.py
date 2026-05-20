@@ -3,9 +3,8 @@ import math
 import random
 import re
 from collections import Counter
+from collections import defaultdict
 from pathlib import Path
-
-import torch
 
 
 PAD_TOKEN = "<PAD>"
@@ -39,6 +38,34 @@ def load_binary_examples(csv_path):
             label = 1 if sentiment == 4 else 0
             examples.append({"text": clean_tweet(row[5]), "label": label})
     return examples
+
+
+def deduplicate_examples(examples, drop_conflicting_labels=True):
+    grouped_examples = defaultdict(list)
+    for example in examples:
+        grouped_examples[str(example["text"])].append(example)
+
+    deduplicated_examples = []
+    duplicate_count = 0
+    conflicting_text_count = 0
+
+    for text, text_examples in grouped_examples.items():
+        duplicate_count += max(0, len(text_examples) - 1)
+        labels = {example["label"] for example in text_examples}
+
+        if len(labels) > 1:
+            conflicting_text_count += 1
+            if drop_conflicting_labels:
+                continue
+
+        deduplicated_examples.append(text_examples[0])
+
+    return deduplicated_examples, {
+        "input_examples": len(examples),
+        "output_examples": len(deduplicated_examples),
+        "duplicate_rows_removed": duplicate_count,
+        "conflicting_texts_dropped": conflicting_text_count,
+    }
 
 
 def percentile_sequence_length(texts, percentile):
@@ -88,5 +115,7 @@ def encode_text(text, vocab, max_sequence_length):
 
 
 def build_feature_tensor(texts, vocab, max_sequence_length):
+    import torch
+
     encoded_rows = [encode_text(text, vocab, max_sequence_length) for text in texts]
     return torch.tensor(encoded_rows, dtype=torch.long)

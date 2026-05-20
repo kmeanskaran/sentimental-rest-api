@@ -4,6 +4,7 @@ paths:
   artifact_dir: artifacts
 
 training:
+  deduplicate_text: true
   vocab_limit: 50000
   val_size: 0.2
   seed: 42

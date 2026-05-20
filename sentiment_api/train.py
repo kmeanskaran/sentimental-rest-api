@@ -12,6 +12,7 @@ from sentiment_api.preprocessing import (
     PAD_INDEX,
     build_feature_tensor,
     build_vocab,
+    deduplicate_examples,
     load_binary_examples,
     percentile_sequence_length,
     stratified_split,
@@ -44,6 +45,7 @@ LEARNING_RATE = TRAINING_CONFIG["learning_rate"]
 WEIGHT_DECAY = TRAINING_CONFIG["weight_decay"]
 EPOCHS = TRAINING_CONFIG["epochs"]
 SAMPLE_PREDICTION_COUNT = TRAINING_CONFIG["sample_prediction_count"]
+DEDUPLICATE_TEXT = TRAINING_CONFIG.get("deduplicate_text", True)
 
 LABEL_NAMES = {
     0: "negative",
@@ -84,6 +86,7 @@ def prepare_datasets(
     val_size=VAL_SIZE,
     vocab_limit=VOCAB_LIMIT,
     seed=SEED,
+    deduplicate_text=DEDUPLICATE_TEXT,
 ):
     train_file = Path(train_file)
     test_file = Path(test_file)
@@ -93,6 +96,12 @@ def prepare_datasets(
 
     all_train_examples = load_binary_examples(train_file)
     test_examples = load_binary_examples(test_file)
+
+    train_deduplication_stats = None
+    test_deduplication_stats = None
+    if deduplicate_text:
+        all_train_examples, train_deduplication_stats = deduplicate_examples(all_train_examples)
+        test_examples, test_deduplication_stats = deduplicate_examples(test_examples)
 
     train_examples, val_examples = stratified_split(
         all_train_examples,
@@ -108,6 +117,10 @@ def prepare_datasets(
 
     print(f"Loaded {len(all_train_examples)} training examples")
     print(f"Loaded {len(test_examples)} filtered test examples")
+    if train_deduplication_stats is not None:
+        print(f"Training deduplication stats: {train_deduplication_stats}")
+    if test_deduplication_stats is not None:
+        print(f"Test deduplication stats: {test_deduplication_stats}")
     print(f"Training split size: {len(train_examples)}")
     print(f"Validation split size: {len(val_examples)}")
     print(f"Vocabulary size: {len(vocab)}")
@@ -131,6 +144,11 @@ def prepare_datasets(
     return {
         "vocab": vocab,
         "max_sequence_length": max_sequence_length,
+        "deduplicate_text": deduplicate_text,
+        "deduplication": {
+            "train": train_deduplication_stats,
+            "test_binary_only": test_deduplication_stats,
+        },
         "datasets": datasets,
         "examples": {
             "train": train_examples,
@@ -280,6 +298,8 @@ def train(
     metadata = {
         "vocab": prepared["vocab"],
         "max_sequence_length": prepared["max_sequence_length"],
+        "deduplicate_text": prepared["deduplicate_text"],
+        "deduplication": prepared["deduplication"],
     }
     INFO_FILE.write_text(json.dumps(metadata))
     print(f"Saved model metadata to: {INFO_FILE}")

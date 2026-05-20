@@ -25,7 +25,7 @@ This repository contains an end-to-end submission for the Avoma NLP task: model 
 
 ## What Each Part Does
 
-- `app.py`: FastAPI app exposing `POST /evaluate` and `GET /health`
+- `app.py`: FastAPI app exposing `POST /evaluate`, `POST /evaluate/batch`, and `GET /health`
 - `config.yml`: dataset paths, artifact path, and training hyperparameters
 - `set_uv.sh`: helper setup script that prepares a local `.venv` using `uv` and installs dependencies from `requirements.txt`
 - `analysis.ipynb`: EDA and problem framing
@@ -36,7 +36,7 @@ This repository contains an end-to-end submission for the Avoma NLP task: model 
 
 ## Config Guide
 
-Edit [config.yml](/Users/karan/Documents/Karan-Shingde-avoma-nlp-task/config.yml:1) before training if you want to change parameters.
+Edit [config.yml](/Users/karan/Documents/sentimental-rest-api/config.yml:1) before training if you want to change parameters.
 
 Current sections:
 
@@ -44,6 +44,7 @@ Current sections:
 - `paths.test_file`: manual test CSV path
 - `paths.artifact_dir`: output directory for model and JSON artifacts
 - `training.vocab_limit`: max vocabulary size
+- `training.deduplicate_text`: remove duplicate cleaned tweets before splitting and drop conflicting-label duplicates
 - `training.val_size`: validation split fraction
 - `training.seed`: random seed
 - `training.embed_size`: embedding dimension
@@ -113,12 +114,13 @@ What it does:
 
 1. Loads `config.yml`
 2. Loads the train and test CSV files
-3. Builds the train and validation split
-4. Trains the LSTM model
-5. Prints each epoch as `Epoch X/Y`
-6. Saves the best model checkpoint
-7. Evaluates on validation and filtered test data
-8. Saves sample predictions to JSON
+3. Deduplicates exact cleaned tweets before splitting when enabled
+4. Builds the train and validation split
+5. Trains the LSTM model
+6. Prints each epoch as `Epoch X/Y`
+7. Saves the best model checkpoint
+8. Evaluates on validation and filtered test data
+9. Saves sample predictions to JSON
 
 Artifacts written:
 
@@ -163,6 +165,39 @@ Example response shape:
 }
 ```
 
+Batch request example:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/evaluate/batch" \
+  -H "Content-Type: application/json" \
+  -d '{"sentences":["I love this update","This is the worst release yet"]}'
+```
+
+Batch response shape:
+
+```json
+{
+  "predictions": [
+    {
+      "text": "I love this update",
+      "clean_text": "i love this update",
+      "predicted_label": 1,
+      "predicted_sentiment": "positive",
+      "probability_positive": 0.91,
+      "probability_negative": 0.09
+    },
+    {
+      "text": "This is the worst release yet",
+      "clean_text": "this is the worst release yet",
+      "predicted_label": 0,
+      "predicted_sentiment": "negative",
+      "probability_positive": 0.08,
+      "probability_negative": 0.92
+    }
+  ]
+}
+```
+
 ### 6. Open the notebook
 
 If you want to review the EDA notebook:
@@ -175,4 +210,5 @@ jupyter notebook analysis.ipynb
 
 - The model is intentionally a binary classifier because the training file contains only labels `0` and `4`.
 - Neutral rows with label `2` in the manual test set are excluded from scored evaluation.
+- Exact duplicate cleaned tweets are removed before the train/validation split by default to reduce leakage; conflicting-label duplicates are dropped.
 - The notebook is EDA-focused; the actual training implementation lives in Python code.
