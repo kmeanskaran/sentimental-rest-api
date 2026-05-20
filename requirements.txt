@@ -1,0 +1,11 @@
+fastapi
+httpx
+matplotlib
+notebook
+pandas
+PyYAML
+pytest
+seaborn
+torch
+uvicorn[standard]
+wandb

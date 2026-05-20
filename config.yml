@@ -1,0 +1,18 @@
+paths:
+  train_file: trainingandtestdata/training.1600000.processed.noemoticon.csv
+  test_file: trainingandtestdata/testdata.manual.2009.06.14.csv
+  artifact_dir: artifacts
+
+training:
+  vocab_limit: 50000
+  val_size: 0.2
+  seed: 42
+  embed_size: 128
+  hidden_size: 128
+  lstm_layers: 1
+  dropout: 0.2
+  batch_size: 512
+  learning_rate: 0.001
+  weight_decay: 0.00001
+  epochs: 10
+  sample_prediction_count: 25
