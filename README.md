@@ -198,6 +198,29 @@ Batch response shape:
 }
 ```
 
+Borderline edge-case example:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/evaluate" \
+  -H "Content-Type: application/json" \
+  -d '{"sentence":"new features are not that accurate, elon can you make changes to make it better?"}'
+```
+
+Observed response:
+
+```json
+{
+  "text": "new features are not that accurate, elon can you make changes to make it better?",
+  "clean_text": "new features are not that accurate, elon can you make changes to make it better?",
+  "predicted_label": 1,
+  "predicted_sentiment": "positive",
+  "probability_positive": 0.5029780268669128,
+  "probability_negative": 0.49702197313308716
+}
+```
+
+This is a useful example of a borderline prediction. The current model uses a `0.5` decision threshold, so even a very narrow margin above `0.5` is returned as positive. In practice, this kind of output should be interpreted as low-confidence sentiment rather than strongly positive sentiment.
+
 ### 6. Open the notebook
 
 If you want to review the EDA notebook:
