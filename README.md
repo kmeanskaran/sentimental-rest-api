@@ -9,6 +9,7 @@ This repository contains an end-to-end submission for the Avoma NLP task: model 
 ├── app.py
 ├── config.yml
 ├── requirements.txt
+├── set_uv.sh
 ├── analysis.ipynb
 ├── scripts/
 │   └── train_and_evaluate.py
@@ -26,6 +27,7 @@ This repository contains an end-to-end submission for the Avoma NLP task: model 
 
 - `app.py`: FastAPI app exposing `POST /evaluate` and `GET /health`
 - `config.yml`: dataset paths, artifact path, and training hyperparameters
+- `set_uv.sh`: helper setup script that prepares a local `.venv` using `uv` and installs dependencies from `requirements.txt`
 - `analysis.ipynb`: EDA and problem framing
 - `scripts/train_and_evaluate.py`: entry point for training, evaluation, and artifact generation
 - `sentiment_api/`: reusable package for preprocessing, model definition, training, and inference loading
@@ -64,6 +66,15 @@ Use the helper script:
 sh set_uv.sh
 source .venv/bin/activate
 ```
+
+What `set_uv.sh` does:
+
+- Sets project-local `uv` cache directories under `.cache/uv`
+- Reuses an existing `.venv` if present, or creates one if it does not exist
+- Installs `uv` first if it is not already available on your machine
+- Installs all packages from `requirements.txt` into `.venv`
+
+Use this script when you want a repeatable local setup without manually creating the virtual environment and installing dependencies step by step.
 
 Or do it manually:
 
